@@ -20,15 +20,11 @@
 (deftagged CancelEdit [])
 
 (defn get-next-id [{:keys [todos]}]
-  (->> todos
-       (apply max-key :id)
-       :id
-       inc))
+  (->> todos (apply max-key :id) :id inc))
 
 (defprotomethod reduce-action [state ^this {:keys [text id]}]
   AddTodo
-  (-> state
-      (update :todos #(conj % (->Todo (get-next-id state) text false))))
+  (update state :todos #(conj % (->Todo (get-next-id state) text false)))
 
   ToggleTodo
   (let [{:keys [todos]} state]
@@ -56,10 +52,7 @@
 
   DeleteCompleted
   (let [{:keys [todos]} state]
-    (->> todos
-         (remove :completed?)
-         vec
-         (assoc state :todos)))
+    (->> todos (remove :completed?) vec (assoc state :todos)))
 
   BeginEdit
   (assoc state :editing-id id)
@@ -198,28 +191,22 @@
             [(set-stored-todos todos)]]
           <[header {:class "header"} $=
             <[h1 "todos"]
-            <[dom/collect-and-reduce ::input #(-> %2) "" $=
-              (->> (s/changed s-todos)
-                   (e/map get-next-id)
-                   e/dedup
-                   (e/map #(-> nil))
+            <[dom/collect-reduce-and-bind ::input #(-> %2) "" $[value]=
+              <[input {:class "new-todo"
+                       :placeholder "What needs to be done?"
+                       :autofocus true
+                       :value value}
+                ] d-input >
+              (->> (dom/on-input d-input)
+                   (e/map #(.. % -target -value))
                    (dom/emit ::input))
-              s-input <- (dom/envs ::input)
-              <[dom/bind s-input $[value]=
-                <[input {:class "new-todo"
-                         :placeholder "What needs to be done?"
-                         :autofocus true
-                         :value value}
-                  ] d-input >
-                (->> (dom/on-input d-input)
-                     (e/map #(.. % -target -value))
-                     (dom/emit ::input))
-                (->> (dom/on-key-down d-input)
-                     (e/filter #(= 13 (.-keyCode %)))
-                     (e/map #(.trim value))
-                     (e/remove empty?)
-                     (e/map #(->AddTodo %))
-                     (dom/emit ::todos))]]]
+              let [e-add (->> (dom/on-key-down d-input)
+                              (e/filter #(= 13 (.-keyCode %)))
+                              (e/map #(.trim value))
+                              (e/remove empty?)
+                              (e/map #(->AddTodo %)))]
+              (dom/emit ::input (e/map #(-> nil) e-add))
+              (dom/emit ::todos e-add)]]
           <[todos-view]]]]]
   <[footer {:class "info"} $=
     <[p "Double-click to edit a todo"]
