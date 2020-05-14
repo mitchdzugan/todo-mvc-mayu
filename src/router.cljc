@@ -4,8 +4,9 @@
                :cljs [reitit.frontend :as r])))
 
 (def routes
-  [["/" {:name ::home}]
-   ["/page/:id" {:name ::page}]])
+  [["/" {:name ::all}]
+   ["/active" {:name ::active}]
+   ["/completed" {:name ::completed}]])
 
 (def router (r/router routes))
 

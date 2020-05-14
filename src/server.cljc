@@ -57,7 +57,9 @@
   (.write res page-pre)
   (let [{:keys [signal off]}
         (s/build (s/from route e/never))
-        markup-channel (dom/render-to-string {::r/s-route signal} ui.entry/root)]
+        markup-channel (dom/render-to-string {:get-stored-todos (fn [])
+                                              :set-stored-todos (fn [])
+                                              ::r/s-route signal} ui.entry/root)]
     (go-loop []
       (let [markup (<! markup-channel)]
         (if (nil? markup)
